@@ -1,0 +1,395 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ระบบจองที่จอดรถ - MSU</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 0;
+      background: #f4f4f4;
+      color: #333;
+    }
+    header {
+      background: #ffc107;
+      color: #333;
+      padding: 20px;
+      text-align: center;
+      font-weight: bold;
+      font-size: 1.5rem;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    }
+    header img {
+      height: 50px;
+      vertical-align: middle;
+      margin-right: 10px;
+    }
+    main {
+      max-width: 720px;
+      margin: 40px auto;
+      background: #fff;
+      padding: 25px 30px;
+      border-radius: 10px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.08);
+    }
+    h2, h3 {
+      margin-top: 0;
+      color: #555;
+    }
+    label {
+      display: block;
+      margin-top: 15px;
+      font-weight: 600;
+      color: #444;
+    }
+    input, select, button {
+      width: 100%;
+      padding: 10px;
+      margin-top: 5px;
+      box-sizing: border-box;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+      font-size: 1rem;
+      background: #fafafa;
+    }
+    button {
+      background: #ffc107;
+      border: none;
+      color: #333;
+      font-weight: bold;
+      cursor: pointer;
+      transition: 0.3s;
+    }
+    button:hover {
+      background: #e0a800;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 25px;
+      font-size: 0.95rem;
+    }
+    th, td {
+      border: 1px solid #ddd;
+      padding: 10px;
+      text-align: center;
+    }
+    th {
+      background: #ffc107;
+      color: #333;
+      font-weight: bold;
+    }
+    .hidden {
+      display: none;
+    }
+    .error {
+      color: red;
+      margin-top: 10px;
+    }
+    .btn-small {
+      font-size: 0.85rem;
+      padding: 6px 12px;
+      margin: 2px;
+      border-radius: 4px;
+    }
+    .btn-edit {
+      background-color: #f0ad4e;
+      border: none;
+      color: #333;
+    }
+    .btn-edit:hover {
+      background-color: #ec971f;
+    }
+    .btn-delete {
+      background-color: #d9534f;
+      border: none;
+      color: white;
+    }
+    .btn-delete:hover {
+      background-color: #c9302c;
+    }
+    .flex-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+    .flex-row > * {
+      flex: 1;
+      margin-right: 10px;
+    }
+    .flex-row > *:last-child {
+      margin-right: 0;
+      flex: 0 0 auto;
+    }
+    @media (max-width: 600px) {
+      .flex-row {
+        flex-direction: column;
+        align-items: stretch;
+      }
+      .flex-row > * {
+        margin-right: 0;
+        margin-bottom: 10px;
+      }
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <span>🚗 MSU ระบบจองที่จอดรถ</span>
+</header>
+
+<main>
+  <section id="login-section">
+    <h2>เข้าสู่ระบบ</h2>
+    <label for="username">ชื่อผู้ใช้:</label>
+    <input type="text" id="username" placeholder="ใส่ชื่อผู้ใช้" autocomplete="username" />
+    <label for="password">รหัสผ่าน:</label>
+    <input type="password" id="password" placeholder="ใส่รหัสผ่าน" autocomplete="current-password" />
+    <button onclick="login()">เข้าสู่ระบบ</button>
+    <p class="error" id="login-error"></p>
+  </section>
+
+  <section id="app-section" class="hidden">
+    <div class="flex-row" style="align-items: center; margin-bottom: 15px;">
+      <h2>ยินดีต้อนรับ, <span id="user-display"></span></h2>
+      <button onclick="logout()" style="flex: 0 0 auto; background:#d9534f;">ออกจากระบบ</button>
+    </div>
+
+    <h3>จำนวนที่จอดรถคงเหลือในแต่ละโซน</h3>
+    <table>
+      <thead>
+        <tr><th>โซน</th><th>ที่จอดรวม</th><th>ที่จอดเหลือ</th></tr>
+      </thead>
+      <tbody id="parking-availability"></tbody>
+    </table>
+
+    <h3>ฟอร์มจองที่จอดรถ</h3>
+    <form id="booking-form" onsubmit="return addBooking(event)">
+      <label for="car-number">หมายเลขทะเบียนรถ:</label>
+      <input type="text" id="car-number" required placeholder="เช่น กข1234" />
+      <label for="parking-zone">เลือกโซนที่จอด:</label>
+      <select id="parking-zone" required></select>
+      <label for="date">วันที่จอง:</label>
+      <input type="date" id="date" required min="" />
+      <button type="submit">จองที่จอดรถ</button>
+    </form>
+
+    <h3>คิวจองที่จอดรถ</h3>
+    <table id="booking-table">
+      <thead>
+        <tr>
+          <th>หมายเลขทะเบียนรถ</th><th>โซนที่จอด</th><th>วันที่จอง</th><th>แก้ไข</th><th>ลบ</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+  </section>
+
+  <section id="edit-section" class="hidden" style="max-width: 600px; margin: 20px auto;">
+    <h3>แก้ไขการจอง</h3>
+    <form id="edit-form" onsubmit="return saveEdit(event)">
+      <input type="hidden" id="edit-index" />
+      <label for="edit-car-number">หมายเลขทะเบียนรถ:</label>
+      <input type="text" id="edit-car-number" required />
+      <label for="edit-parking-zone">เลือกโซนที่จอด:</label>
+      <select id="edit-parking-zone" required></select>
+      <label for="edit-date">วันที่จอง:</label>
+      <input type="date" id="edit-date" required min="" />
+      <button type="submit">บันทึก</button>
+      <button type="button" style="background:#d9534f; margin-left: 10px;" onclick="cancelEdit()">ยกเลิก</button>
+    </form>
+  </section>
+</main>
+
+<script>
+  const validUser = { username: "123456", password: "1234" };
+  const parkingZones = {
+    "คณะแพทยศาสตร์": 300,
+    "คณะเภสัชศาสตร์": 300,
+    "คณะพยาบาลศาสตร์": 300,
+    "คณะสาธารณสุขศาสตร์": 300,
+    "คณะวิทยาศาสตร์": 300,
+    "คณะเทคโนโลยี": 300,
+    "คณะสัตวแพทยศาสตร์": 300,
+    "คณะสิ่งแวดล้อมและทรัพยากรศาสตร์": 300,
+    "คณะวิทยาการสารสนเทศ": 300,
+    "คณะวิศวกรรมศาสตร์": 300,
+    "คณะสถาปัตยกรรมศาสตร์ ผังเมืองและนฤมิตศิลป์": 300,
+    "คณะการบัญชีและการจัดการ": 300,
+    "คณะการท่องเที่ยวและการโรงแรม": 300,
+    "คณะมนุษยศาสตร์และสังคมศาสตร์": 300,
+    "วิทยาลัยการเมืองการปกครอง": 300,
+    "คณะศึกษาศาสตร์": 300,
+    "คณะศิลปกรรมศาสตร์และวัฒนธรรมศาสตร์": 300,
+    "วิทยาลัยดุริยางคศิลป์": 300,
+    "คณะนิติศาสตร์": 300
+  };
+  let bookings = [];
+
+  function setMinDate() {
+    const today = new Date().toISOString().split('T')[0];
+    document.getElementById('date').setAttribute('min', today);
+    document.getElementById('edit-date').setAttribute('min', today);
+  }
+  setMinDate();
+
+  function populateZones() {
+    const zoneSelect = document.getElementById('parking-zone');
+    const editZoneSelect = document.getElementById('edit-parking-zone');
+    Object.keys(parkingZones).forEach(zone => {
+      const opt = document.createElement('option');
+      opt.value = zone;
+      opt.textContent = zone;
+      zoneSelect.appendChild(opt);
+      editZoneSelect.appendChild(opt.cloneNode(true));
+    });
+  }
+  populateZones();
+
+  function login() {
+    const username = document.getElementById('username').value.trim();
+    const password = document.getElementById('password').value.trim();
+    const errorElem = document.getElementById('login-error');
+    if (username === validUser.username && password === validUser.password) {
+      errorElem.textContent = "";
+      document.getElementById('login-section').classList.add('hidden');
+      document.getElementById('app-section').classList.remove('hidden');
+      document.getElementById('user-display').textContent = username;
+      renderAvailability();
+      renderTable();
+    } else {
+      errorElem.textContent = "ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง";
+    }
+  }
+
+  function logout() {
+    if (confirm('คุณต้องการออกจากระบบใช่หรือไม่?')) {
+      document.getElementById('login-section').classList.remove('hidden');
+      document.getElementById('app-section').classList.add('hidden');
+      document.getElementById('edit-section').classList.add('hidden');
+      document.getElementById('username').value = "";
+      document.getElementById('password').value = "";
+      bookings = [];
+      renderTable();
+    }
+  }
+
+  function renderAvailability() {
+    const tbody = document.getElementById('parking-availability');
+    tbody.innerHTML = '';
+    for (const zone in parkingZones) {
+      const total = parkingZones[zone];
+      const used = bookings.filter(b => b.parkingZone === zone).length;
+      const left = total - used;
+      const tr = document.createElement('tr');
+      tr.innerHTML = `<td>${zone}</td><td>${total}</td><td>${left >= 0 ? left : 0}</td>`;
+      tbody.appendChild(tr);
+    }
+  }
+
+  function addBooking(event) {
+    event.preventDefault();
+    const carNumber = document.getElementById('car-number').value.trim();
+    const parkingZone = document.getElementById('parking-zone').value;
+    const date = document.getElementById('date').value;
+    if (!carNumber || !parkingZone || !date) {
+      alert('กรุณากรอกข้อมูลให้ครบถ้วน');
+      return false;
+    }
+    const countSameDayZone = bookings.filter(b => b.date === date && b.parkingZone === parkingZone).length;
+    if (countSameDayZone >= parkingZones[parkingZone]) {
+      alert(`โซน ${parkingZone} วันที่ ${date} ที่จอดเต็มแล้ว`);
+      return false;
+    }
+    const duplicate = bookings.find(b => b.carNumber === carNumber && b.date === date && b.parkingZone === parkingZone);
+    if (duplicate) {
+      alert("คุณได้จองที่จอดรถในวันและโซนนี้แล้ว");
+      return false;
+    }
+    bookings.push({ carNumber, parkingZone, date });
+    alert("จองที่จอดรถสำเร็จ!");
+    renderTable();
+    renderAvailability();
+    document.getElementById('booking-form').reset();
+    return false;
+  }
+
+  function renderTable() {
+    const tbody = document.querySelector('#booking-table tbody');
+    tbody.innerHTML = "";
+    if (bookings.length === 0) {
+      tbody.innerHTML = `<tr><td colspan="5">ยังไม่มีรายการจอง</td></tr>`;
+      return;
+    }
+    bookings.forEach((b, index) => {
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td>${b.carNumber}</td>
+        <td>${b.parkingZone}</td>
+        <td>${b.date}</td>
+        <td><button class="btn-small btn-edit" onclick="startEdit(${index})">แก้ไข</button></td>
+        <td><button class="btn-small btn-delete" onclick="deleteBooking(${index})">ลบ</button></td>`;
+      tbody.appendChild(tr);
+    });
+  }
+
+  function startEdit(index) {
+    const booking = bookings[index];
+    if (!booking) return;
+    document.getElementById('edit-index').value = index;
+    document.getElementById('edit-car-number').value = booking.carNumber;
+    document.getElementById('edit-parking-zone').value = booking.parkingZone;
+    document.getElementById('edit-date').value = booking.date;
+    document.getElementById('app-section').classList.add('hidden');
+    document.getElementById('edit-section').classList.remove('hidden');
+  }
+
+  function cancelEdit() {
+    document.getElementById('edit-section').classList.add('hidden');
+    document.getElementById('app-section').classList.remove('hidden');
+  }
+
+  function saveEdit(event) {
+    event.preventDefault();
+    const index = Number(document.getElementById('edit-index').value);
+    const carNumber = document.getElementById('edit-car-number').value.trim();
+    const parkingZone = document.getElementById('edit-parking-zone').value;
+    const date = document.getElementById('edit-date').value;
+    if (!carNumber || !parkingZone || !date) {
+      alert('กรุณากรอกข้อมูลให้ครบถ้วน');
+      return false;
+    }
+    const countSameDayZone = bookings.filter((b, i) => b.date === date && b.parkingZone === parkingZone && i !== index).length;
+    if (countSameDayZone >= parkingZones[parkingZone]) {
+      alert(`โซน ${parkingZone} วันที่ ${date} ที่จอดเต็มแล้ว`);
+      return false;
+    }
+    const duplicate = bookings.find((b, i) => b.carNumber === carNumber && b.date === date && b.parkingZone === parkingZone && i !== index);
+    if (duplicate) {
+      alert("มีการจองที่จอดรถทะเบียนนี้ในวันและโซนนี้แล้ว");
+      return false;
+    }
+    bookings[index] = { carNumber, parkingZone, date };
+    alert("บันทึกการแก้ไขเรียบร้อยแล้ว");
+    cancelEdit();
+    renderTable();
+    renderAvailability();
+    return false;
+  }
+
+  function deleteBooking(index) {
+    if (confirm("คุณต้องการลบรายการนี้หรือไม่?")) {
+      bookings.splice(index, 1);
+      alert("ลบรายการเรียบร้อยแล้ว");
+      renderTable();
+      renderAvailability();
+    }
+  }
+</script>
+
+</body>
+</html>
